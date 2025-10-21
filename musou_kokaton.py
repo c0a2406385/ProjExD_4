@@ -88,14 +88,21 @@ class Bird(pg.sprite.Sprite):
         引数1 key_lst：押下キーの真理値リスト
         引数2 screen：画面Surface
         """
+        
+        current_speed = self.speed  # まずデフォルト速度(10)を代入
+        if key_lst[pg.K_LSHIFT]:  # もし左Shiftキーが押されていたら
+            current_speed = 20      # 速度を20（高速化）に上書き
+        
         sum_mv = [0, 0]
         for k, mv in __class__.delta.items():
             if key_lst[k]:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
-        self.rect.move_ip(self.speed*sum_mv[0], self.speed*sum_mv[1])
+        # 移動処理で self.speed の代わりに current_speed を使う
+        self.rect.move_ip(current_speed * sum_mv[0], current_speed * sum_mv[1])
+        # 画面外チェックの押し戻し処理でも current_speed を使う
         if check_bound(self.rect) != (True, True):
-            self.rect.move_ip(-self.speed*sum_mv[0], -self.speed*sum_mv[1])
+            self.rect.move_ip(-current_speed * sum_mv[0], -current_speed * sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.dire = tuple(sum_mv)
             self.image = self.imgs[self.dire]
