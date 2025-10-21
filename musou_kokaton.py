@@ -133,6 +133,7 @@ class Bomb(pg.sprite.Sprite):
         self.rect.centerx = emy.rect.centerx
         self.rect.centery = emy.rect.centery+emy.rect.height//2
         self.speed = 6
+        self.inactive = False
 
     def update(self):
         """
@@ -229,6 +230,31 @@ class Enemy(pg.sprite.Sprite):
             self.state = "stop"
         self.rect.move_ip(self.vx, self.vy)
 
+class EMP(pg.sprite.Sprite):
+   
+    def __init__(self, emys: pg.sprite.Group, bombs: pg.sprite.Group, screen: pg.Surface):
+        super().__init__()
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        self.image.set_alpha(100)  
+        self.image.fill((255, 255, 0))  
+        self.rect = self.image.get_rect()
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.life = 15  
+
+        for emy in emys:
+            emy.interval = float('inf')  
+            emy.image = pg.transform.laplacian(emy.image)
+
+        for bomb in bombs:
+            bomb.speed *= 0.5  
+            bomb.inactive = True 
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
 
 class Score:
     """
@@ -290,6 +316,7 @@ def main():
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
     gravities = pg.sprite.Group()  # 重力場グループ
+    emps = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -305,6 +332,11 @@ def main():
                 if score.value >= 200:  # 条件を「200以上
                     gravities.add(Gravity(400)) # 400フレーム持続
                     score.value -= 200 # コスト200消費
+            
+            if event.type == pg.KEYDOWN and event.key == pg.K_e:
+                if score.value > 20:
+                    score.value -= 20 
+                    emps.add(EMP(emys, bombs, screen))
 
         screen.blit(bg_img, [0, 0])
 
@@ -337,6 +369,8 @@ def main():
             score.value += 1
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
+            if bomb.inactive:
+                continue 
             bird.change_img(8, screen)  # こうかとん悲しみエフェクト
             score.update(screen)
             pg.display.update()
@@ -352,6 +386,8 @@ def main():
         bombs.draw(screen)
         exps.update()
         exps.draw(screen)
+        emps.update() 
+        emps.draw(screen)
         gravities.update()  # 重力場の更新
         gravities.draw(screen)  # 重力場の描画
         score.update(screen)
