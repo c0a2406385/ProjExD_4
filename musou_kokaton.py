@@ -149,14 +149,14 @@ class Beam(pg.sprite.Sprite):
     """
     ビームに関するクラス
     """
-    def __init__(self, bird: Bird):
+    def __init__(self, bird: Bird, add_angle: int = 0):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん
         """
         super().__init__()
         self.vx, self.vy = bird.dire
-        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        angle = math.degrees(math.atan2(-self.vy, self.vx)) + add_angle
         self.image = pg.transform.rotozoom(pg.image.load(f"fig/beam.png"), angle, 1.0)
         self.vx = math.cos(math.radians(angle))
         self.vy = -math.sin(math.radians(angle))
@@ -174,6 +174,25 @@ class Beam(pg.sprite.Sprite):
         if check_bound(self.rect) != (True, True):
             self.kill()
 
+class NeoBeam:
+    """
+    複数方向のビームを生成するクラス
+    """
+    @staticmethod
+    def gen_beams(bird: Bird, num: int) -> list[Beam]:
+        """
+        指定された数のビームを-50度から+50度の範囲で等間隔に生成し、リストとして返す
+        """
+        # numが1の場合のゼロ除算を避ける
+        if num == 1:
+            return [Beam(bird, add_angle=0)]
+        
+        beams = []
+        angle_step = 100 / (num - 1)  # 角度のステップを計算
+        for i in range(num):
+            angle = -50 + i * angle_step
+            beams.append(Beam(bird, add_angle = int(angle)))
+        return beams
 
 class Explosion(pg.sprite.Sprite):
     """
@@ -326,7 +345,10 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.add(Beam(bird))
+                if key_lst[pg.K_z]:
+                    beams.add(NeoBeam.gen_beams(bird, 5))
+                else:
+                    beams.add(Beam(bird))
 
             if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
                 if score.value >= 200:  # 条件を「200以上
